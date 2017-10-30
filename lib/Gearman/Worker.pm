@@ -221,8 +221,10 @@ sub work {
     # in the loop we contact all servers.
     my %active_js = map { $_ => 1 } keys(%js_map);
 
+    my $idle_since = time();
     while (1) {
 
+        $idle_since ||= time();
         # "Jobby" job servers are the set of server which we will contact
         # on this pass through the loop, because we need to clear and use
         # the "Active" set to plan for our next pass through the loop.
@@ -232,6 +234,8 @@ sub work {
 
         my $js_count  = @jobby_js;
         my $js_offset = int(rand($js_count));
+
+        my $handled_jobs = 0;
 
         for (my $i = 0; $i < $js_count; $i++) {
             my $js_index = ($i + $js_offset) % $js_count;
@@ -314,6 +318,8 @@ sub work {
             warn "Job '$ability' died: $err" if $err;
 
             $last_job_time = time();
+            $handled_jobs++;
+            undef($idle_since);
 
             if ($err) {
                 my $exception_req
@@ -349,23 +355,27 @@ sub work {
         } ## end for (my $i = 0; $i < $js_count...)
 
         foreach my $js_str (keys(%js_map)) {
-            my $jss
-                = $self->_get_js_sock($js_map{$js_str},
-                on_connect => $on_connect, register_on_reconnect => 1);
-              $jss || next;
+            my $jss = $self->_get_js_sock(
+                $js_map{$js_str},
+                on_connect            => $on_connect,
+                register_on_reconnect => 1
+            );
+            $jss || next;
 
-            my $io = IO::Select->new($jss);
-            $io->can_write(10) || next;
-
-            if($last_job_time && time() - $last_job_time >= 10) {
-                # chill for some arbitrary time until we're woken up again
-                select($io->bits(), undef, undef, 10 + rand(2));
-            }
+            my $io = IO::Select->new($jss)->can_write(10) || next;
 
             $active_js{$js_str} = 1;
         } ## end foreach my $js_str (keys(%js_map...))
 
-        my $is_idle = scalar(keys %active_js) > 0 ? 0 : 1;
+        unless ($handled_jobs) {
+            my $timeout = time - $idle_since || 1;
+            $timeout = 10 + rand(2) if $timeout > 10;
+
+            # chill for some arbitrary time until we're woken up again
+            select(undef, undef, undef, $timeout);
+        } ## end unless ($handled_jobs)
+
+        my $is_idle = $handled_jobs ? 1 : 0;
 
         last if $stop_if->($is_idle, $last_job_time);
     } ## end while (1)

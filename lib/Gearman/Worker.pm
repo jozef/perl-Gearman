@@ -368,7 +368,7 @@ sub work {
         } ## end foreach my $js_str (keys(%js_map...))
 
         unless ($handled_jobs) {
-            my $timeout = time - $idle_since || 1;
+            my $timeout = time - $idle_since;
             $timeout = 10 + rand(2) if $timeout > 10;
 
             # chill for some arbitrary time until we're woken up again

@@ -230,8 +230,6 @@ sub work {
         # the "Active" set to plan for our next pass through the loop.
         my @jobby_js = keys %active_js;
 
-        %active_js = ();
-
         my $js_count  = @jobby_js;
         my $js_offset = int(rand($js_count));
 
@@ -241,8 +239,15 @@ sub work {
             my $js_index = ($i + $js_offset) % $js_count;
             my $js_str   = $jobby_js[$js_index];
             my $js       = $js_map{$js_str};
-            my $jss      = $self->_get_js_sock($js, on_connect => $on_connect, register_on_reconnect => 1)
-                or next;
+            my $jss      = $self->_get_js_sock(
+                $js,
+                on_connect            => $on_connect,
+                register_on_reconnect => 1
+            );
+            unless ($jss) {
+                delete($active_js{$js_str});
+                next;
+            }
 
             # TODO: add an optional sleep in here for the test suite
             # to test gearmand server going away here.  (SIGPIPE on
@@ -355,6 +360,8 @@ sub work {
         } ## end for (my $i = 0; $i < $js_count...)
 
         foreach my $js_str (keys(%js_map)) {
+            $active_js{$js_str} && next;
+
             my $jss = $self->_get_js_sock(
                 $js_map{$js_str},
                 on_connect            => $on_connect,

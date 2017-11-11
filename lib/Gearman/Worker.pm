@@ -369,7 +369,7 @@ sub work {
             );
             $jss || next;
 
-            my $io = IO::Select->new($jss)->can_write(10) || next;
+            IO::Select->new($jss)->can_write(2) || next;
 
             $active_js{$js_str} = 1;
         } ## end foreach my $js_str (keys(%js_map...))

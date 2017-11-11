@@ -222,9 +222,10 @@ sub work {
     my %active_js = map { $_ => 1 } keys(%js_map);
 
     my $idle_since = time();
-    while (1) {
 
+    while (1) {
         $idle_since ||= time();
+
         # "Jobby" job servers are the set of server which we will contact
         # on this pass through the loop, because we need to clear and use
         # the "Active" set to plan for our next pass through the loop.
@@ -274,7 +275,7 @@ sub work {
             {
                 $self->_uncache_sock($js, "grab_job_timeout");
                 next;
-            } ## end unless (Gearman::Util::wait_for_readability...)
+            }
 
             my $res;
             do {
@@ -642,7 +643,7 @@ sub _get_js_sock {
     delete $self->{last_connect_fail}{$js_str};
     delete $self->{down_since}{$js_str};
 
-    if( $opts{register_on_reconnect} ) {
+    if ($opts{register_on_reconnect}) {
         my @fail = ();
         foreach (keys %{ $self->{can} }) {
             $self->_register_function($_, $js, $sock) || push @fail, $_;
@@ -653,7 +654,7 @@ sub _get_js_sock {
                 @fail);
             return;
         }
-    } ## end if (delete $self->{down_since...})
+    } ## end if ($opts{register_on_reconnect...})
 
     $self->_sock_cache($js, $sock);
 

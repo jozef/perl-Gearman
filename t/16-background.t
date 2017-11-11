@@ -46,7 +46,7 @@ subtest "dispatch background", sub {
     );
 
     # wait for job to start being processed:
-    sleep 2;
+    sleep 1;
 
     ok($handle, 'Got a handle back from dispatching background job');
     ok(my $status = $client->get_status($handle), "get_status");

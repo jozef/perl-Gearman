@@ -11,6 +11,7 @@ use warnings;
 use POSIX qw(:errno_h);
 use Time::HiRes qw();
 use IO::Select;
+use List::Util qw(min);
 
 =head1 NAME
 
@@ -198,7 +199,7 @@ sub read_res_packet {
 sub _read_sock {
     my ($sock, $buf_ref, $readlen_ref, $offset_ref) = @_;
     local $!;
-    my $rv = sysread($sock, $$buf_ref, $$readlen_ref, $$offset_ref);
+    my $rv = sysread($sock, $$buf_ref, $$readlen_ref, min(10*1024, $$offset_ref));
 
     unless ($rv) {
         warn "   Read error: $!\n" if DEBUG;

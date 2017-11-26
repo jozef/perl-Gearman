@@ -1,6 +1,7 @@
 package Gearman::ResponseParser;
 use version ();
 $Gearman::ResponseParser::VERSION = version->declare("2.004.009");
+use List::Util qw(min);
 
 
 use strict;
@@ -171,7 +172,7 @@ C<$sock> is readable, we should sysread it and feed it to L<parse_data($data)>
 sub parse_sock {
     my ($self, $sock) = @_;
     my $data;
-    my $need = (length($self->{header}) ? ($self->{pkt}{len} - length(${ $self->{pkt}{blobref} })) : 12);
+    my $need = (length($self->{header}) ? min(10*1024, $self->{pkt}{len} - length(${ $self->{pkt}{blobref} })) : 12);
     my $rv = sysread($sock, $data, $need);
 
     if (!defined $rv) {
